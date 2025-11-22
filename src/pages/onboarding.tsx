@@ -6,6 +6,7 @@ import { Habit } from '@/types';
 import CameraCapture from '@/components/CameraCapture';
 import EmojiPicker from '@/components/EmojiPicker';
 import { playBackgroundMusic, stopBackgroundMusic } from '@/utils/backgroundMusic';
+import { sounds } from '@/utils/sounds';
 
 export default function Onboarding() {
   const router = useRouter();
