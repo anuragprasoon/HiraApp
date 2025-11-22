@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { PhotoIcon, ShareIcon, UserIcon, ArrowDownTrayIcon, XMarkIcon, ArrowUpTrayIcon, PencilIcon } from '@heroicons/react/24/solid';
+import { PhotoIcon, ShareIcon, UserIcon, ArrowDownTrayIcon, XMarkIcon, ArrowUpTrayIcon, PencilIcon, TrophyIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
 import { getUser, getHabits, getPhotos, getCalendarData, getChallenges, formatDate, saveUser } from '@/utils/storage';
 import { User, Habit, HabitPhoto, CalendarDay, Challenge } from '@/types';
 import SocialShareTemplate from '@/components/SocialShareTemplate';
@@ -18,7 +18,7 @@ export default function Profile() {
   const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<{ habit: Habit; photo: HabitPhoto } | null>(null);
-  const [activeTab, setActiveTab] = useState<'calendar' | 'timeline' | 'challenges'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'challenges'>('calendar');
   const [showCameraForDP, setShowCameraForDP] = useState(false);
 
   useEffect(() => {
@@ -60,6 +60,72 @@ export default function Profile() {
   const acceptedChallenges = challenges.filter(c => 
     user && c.participants.includes(user.id)
   );
+
+  // Calculate leaderboard position for each challenge
+  const getChallengeLeaderboardPosition = (challenge: Challenge): { rank: number; hiraPoints: number; totalParticipants: number } => {
+    if (!user) return { rank: 0, hiraPoints: 0, totalParticipants: 0 };
+
+    const habits = getHabits();
+    const allUsers = [getUser()].filter(Boolean) as User[];
+    
+    // Get all participants' data
+    const entries: Array<{ userId: string; hiraPoints: number }> = [];
+    
+    challenge.participants.forEach((participantId) => {
+      const participantUser = allUsers.find(u => u.id === participantId);
+      if (!participantUser) return;
+
+      // Find the habit associated with this challenge for this participant
+      const challengeHabit = habits.find(
+        h => h.challengeId === challenge.id
+      );
+
+      const hiraPoints = challengeHabit?.totalHira || 0;
+      entries.push({ userId: participantId, hiraPoints });
+    });
+
+    // Sort by Hira points (descending)
+    entries.sort((a, b) => b.hiraPoints - a.hiraPoints);
+
+    // Find current user's rank
+    let userRank = 0;
+    let userHiraPoints = 0;
+    
+    for (let i = 0; i < entries.length; i++) {
+      if (entries[i].userId === user.id) {
+        userHiraPoints = entries[i].hiraPoints;
+        // Handle ties - if previous entry has same points, use same rank
+        if (i > 0 && entries[i - 1].hiraPoints === entries[i].hiraPoints) {
+          // Find the first entry with this score
+          let rank = i;
+          for (let j = i - 1; j >= 0; j--) {
+            if (entries[j].hiraPoints === entries[i].hiraPoints) {
+              rank = j;
+            } else {
+              break;
+            }
+          }
+          userRank = rank + 1;
+        } else {
+          userRank = i + 1;
+        }
+        break;
+      }
+    }
+
+    return { 
+      rank: userRank, 
+      hiraPoints: userHiraPoints, 
+      totalParticipants: entries.length 
+    };
+  };
+
+  const getMedalEmoji = (rank: number) => {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return null;
+  };
 
   const dailyWisdom = getDailyWisdom();
   const totalHabitsCompleted = habits.reduce((sum, habit) => sum + habit.completedDates.length, 0);
@@ -155,7 +221,6 @@ export default function Profile() {
   const streak = calculateStreak();
   const skipped = calculateSkipped();
   const weeklyActivity = getWeeklyActivity();
-  const shareLink = `${window.location.origin}/profile/${user.id}`;
 
   const handleShareCalendar = async () => {
     const imageData = await generateCalendarImage(calendarData, user);
@@ -283,81 +348,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Share Your Progress Card */}
-            <div className="bg-white 2xl p-5 shadow-sm border border-gray-200">
-              {/* Avatar Icons */}
-              <div className="flex items-center justify-center gap-2 mb-4 flex-wrap relative h-16">
-                {[
-                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face',
-                  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-                  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
-                  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face',
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
-                  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face',
-                ].map((imageUrl, i) => {
-                  const positions = [
-                    { x: -10, y: -5 },
-                    { x: 5, y: -10 },
-                    { x: 15, y: 0 },
-                    { x: -5, y: 10 },
-                    { x: 10, y: 8 },
-                    { x: -15, y: 5 },
-                  ];
-                  return (
-                    <div
-                      key={i}
-                      className="absolute w-10 h-10 full overflow-hidden border-2 border-white shadow-md"
-                      style={{
-                        left: `${50 + positions[i].x}%`,
-                        top: `${50 + positions[i].y}%`,
-                        transform: 'translate(-50%, -50%)',
-                      }}
-                    >
-                      <img
-                        src={imageUrl}
-                        alt={`User ${i + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          // Fallback to gradient if image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.parentElement!.className = 'absolute w-10 h-10 full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm shadow-md';
-                          target.parentElement!.textContent = String.fromCharCode(65 + (i % 26));
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              
-              <h3 className="text-lg text-black text-center mb-2">Share Your Progress</h3>
-              <p className="text-sm text-gray-600 text-center mb-4 leading-relaxed">
-                Share your progress, increase your goals and also motivate others to join your journey!
-              </p>
-              
-              <div className="flex items-center justify-between bg-gray-50 xl p-3 border border-gray-200">
-                <a
-                  href={shareLink}
-                  className="text-sm text-pink-600 font-medium truncate flex-1"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigator.clipboard.writeText(shareLink);
-                    alert('Link copied to clipboard!');
-                  }}
-                >
-                  {shareLink}
-                </a>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(shareLink);
-                    alert('Link copied to clipboard!');
-                  }}
-                  className="ml-2 p-2 hover:bg-gray-200 lg transition-colors"
-                >
-                  <ArrowUpTrayIcon className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
-            </div>
 
             {/* Tabs */}
             <div className="flex gap-2 mb-4 bg-gray-100 p-1 xl">
@@ -372,18 +362,6 @@ export default function Profile() {
                 }`}
               >
                 Calendar
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('timeline');
-                }}
-                className={`flex-1 px-4 py-2.5 lg font-medium transition-all text-sm ${
-                  activeTab === 'timeline'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Timeline ({userPhotos.length})
               </button>
               <button
                 onClick={() => {
@@ -450,14 +428,14 @@ export default function Profile() {
                       Download
                     </button>
                   </div>
-                  <div className="grid grid-cols-7 gap-1.5 mb-3">
+                  <div className="grid grid-cols-7 gap-1 mb-2 max-w-md mx-auto">
                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
-                      <div key={day} className="text-xs text-gray-500 text-center py-1 font-medium">
+                      <div key={day} className="text-[10px] text-gray-500 text-center py-0.5 font-medium">
                         {day}
                       </div>
                     ))}
                   </div>
-                  <div className="grid grid-cols-7 gap-1.5">
+                  <div className="grid grid-cols-7 gap-1 max-w-md mx-auto">
                     {(() => {
                       if (calendarData.length === 0) return null;
                       
@@ -490,14 +468,14 @@ export default function Profile() {
                         return (
                           <div
                             key={day.date}
-                            className={`aspect-square lg ${getIntensityColor(day.level)} cursor-pointer hover:scale-110 transition-transform relative ${
-                              isToday ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                            className={`aspect-square rounded ${getIntensityColor(day.level)} cursor-pointer hover:scale-110 transition-transform relative ${
+                              isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''
                             }`}
                             title={`${day.date} (${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek]}): ${day.count} habit${day.count !== 1 ? 's' : ''} completed`}
                           >
                             {isToday && (
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-1.5 h-1.5 full bg-blue-600"></div>
+                                <div className="w-1 h-1 rounded-full bg-blue-600"></div>
                               </div>
                             )}
                           </div>
@@ -505,100 +483,18 @@ export default function Profile() {
                       });
                     })()}
                   </div>
-                  <div className="flex items-center justify-center gap-3 mt-5 text-xs text-gray-500">
+                  <div className="flex items-center justify-center gap-2 mt-3 text-[10px] text-gray-500 max-w-md mx-auto">
                     <span>Less</span>
-                    <div className="flex gap-1">
-                      <div className="w-2.5 h-2.5 rounded bg-gray-100"></div>
-                      <div className="w-2.5 h-2.5 rounded bg-blue-200"></div>
-                      <div className="w-2.5 h-2.5 rounded bg-blue-300"></div>
-                      <div className="w-2.5 h-2.5 rounded bg-blue-400"></div>
-                      <div className="w-2.5 h-2.5 rounded bg-blue-500"></div>
+                    <div className="flex gap-0.5">
+                      <div className="w-2 h-2 rounded bg-gray-100"></div>
+                      <div className="w-2 h-2 rounded bg-blue-200"></div>
+                      <div className="w-2 h-2 rounded bg-blue-300"></div>
+                      <div className="w-2 h-2 rounded bg-blue-400"></div>
+                      <div className="w-2 h-2 rounded bg-blue-500"></div>
                     </div>
                     <span>More</span>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Timeline View */}
-            {activeTab === 'timeline' && (
-              <div>
-                {userPhotos.length === 0 ? (
-                  <div className="text-center py-20">
-                    <div className="inline-flex items-center justify-center w-16 h-16 full bg-gray-100 mb-4">
-                      <PhotoIcon className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg text-black mb-2">No posts yet</h3>
-                    <p className="text-gray-600 text-sm">Complete habits to see them on your timeline!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {userPhotos
-                      .sort((a, b) => new Date(b.photo.date).getTime() - new Date(a.photo.date).getTime())
-                      .map(({ habit, photo }) => (
-                        <div
-                          key={photo.id}
-                          className="bg-white 2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all"
-                        >
-                          <div className="p-4 border-b border-gray-100">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-xl">
-                                {habit.emoji || '⭐'}
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="text-black">{habit.name}</h3>
-                                <p className="text-xs text-gray-500">{formatDate(photo.date)}</p>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  setSelectedPhoto({ habit, photo });
-                                }}
-                                className="p-2 hover:bg-gray-100 full transition-colors"
-                              >
-                                <ShareIcon className="w-5 h-5 text-gray-600" />
-                              </button>
-                            </div>
-                          </div>
-                          <div 
-                            className="relative w-full cursor-pointer"
-                            onClick={() => setSelectedPhoto({ habit, photo })}
-                          >
-                            <img
-                              src={photo.photoData}
-                              alt={habit.name}
-                              className="w-full object-cover"
-                              style={{ maxHeight: '600px' }}
-                            />
-                          </div>
-                          <div className="p-4">
-                            <div className="flex items-center gap-4 mb-3">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xl">💎</span>
-                                <span className="text-sm font-semibold text-gray-700">{habit.totalHira}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-lg">✅</span>
-                                <span className="text-sm text-gray-600">
-                                  {habit.completedDates.length} completions
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
-                              <button
-                                onClick={() => {
-                                  setSelectedPhoto({ habit, photo });
-                                }}
-                                className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-                              >
-                                <ShareIcon className="w-5 h-5" />
-                                <span className="text-sm font-medium">Share</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
               </div>
             )}
 
@@ -615,36 +511,110 @@ export default function Profile() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {acceptedChallenges.map((challenge) => (
-                      <div
-                        key={challenge.id}
-                        className="bg-white 2xl p-5 shadow-sm border border-gray-200"
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="text-lg text-black mb-1">{challenge.name}</h3>
-                            <p className="text-sm text-gray-600 mb-2">{challenge.description}</p>
-                            <div className="flex items-center gap-3 text-xs text-gray-500">
-                              <span>{challenge.habitName}</span>
-                              <span>•</span>
-                              <span>Ends {formatDate(challenge.endDate)}</span>
+                    {acceptedChallenges.map((challenge) => {
+                      const leaderboardData = getChallengeLeaderboardPosition(challenge);
+                      const medal = getMedalEmoji(leaderboardData.rank);
+                      
+                      return (
+                        <div
+                          key={challenge.id}
+                          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 hover:shadow-md transition-all cursor-pointer"
+                          onClick={() => router.push(`/challenge/${challenge.id}`)}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-lg text-black font-semibold">{challenge.name}</h3>
+                                {challenge.emoji && <span className="text-xl">{challenge.emoji}</span>}
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{challenge.description}</p>
+                              <div className="flex items-center gap-3 text-xs text-gray-500">
+                                <span>{challenge.habitName}</span>
+                                <span>•</span>
+                                <span>Ends {formatDate(challenge.endDate)}</span>
+                              </div>
+                            </div>
+                            <div className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                              challenge.status === 'active' ? 'bg-green-100 text-green-600' :
+                              challenge.status === 'completed' ? 'bg-blue-100 text-blue-600' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {challenge.status}
                             </div>
                           </div>
-                          <div className={`px-2.5 py-1 full text-xs font-medium ${
-                            challenge.status === 'active' ? 'bg-green-100 text-green-600' :
-                            challenge.status === 'completed' ? 'bg-blue-100 text-blue-600' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {challenge.status}
+
+                          {/* Leadership Position */}
+                          {leaderboardData.rank > 0 && (
+                            <div className={`mb-3 p-3 rounded-xl border-2 ${
+                              leaderboardData.rank === 1 
+                                ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200' 
+                                : leaderboardData.rank === 2
+                                ? 'bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200'
+                                : leaderboardData.rank === 3
+                                ? 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200'
+                                : 'bg-blue-50 border-blue-200'
+                            }`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  {medal ? (
+                                    <div className="text-3xl">{medal}</div>
+                                  ) : (
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                                      leaderboardData.rank === 1 
+                                        ? 'bg-gradient-to-br from-yellow-400 to-yellow-600'
+                                        : leaderboardData.rank === 2
+                                        ? 'bg-gradient-to-br from-gray-300 to-gray-500'
+                                        : leaderboardData.rank === 3
+                                        ? 'bg-gradient-to-br from-orange-400 to-orange-600'
+                                        : 'bg-gradient-to-br from-blue-400 to-purple-500'
+                                    }`}>
+                                      #{leaderboardData.rank}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <TrophyIcon className={`w-4 h-4 ${
+                                        leaderboardData.rank === 1 ? 'text-yellow-600' :
+                                        leaderboardData.rank === 2 ? 'text-gray-600' :
+                                        leaderboardData.rank === 3 ? 'text-orange-600' :
+                                        'text-blue-600'
+                                      }`} />
+                                      <span className={`font-bold text-sm ${
+                                        leaderboardData.rank === 1 ? 'text-yellow-700' :
+                                        leaderboardData.rank === 2 ? 'text-gray-700' :
+                                        leaderboardData.rank === 3 ? 'text-orange-700' :
+                                        'text-blue-700'
+                                      }`}>
+                                        Rank #{leaderboardData.rank} of {leaderboardData.totalParticipants}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-lg">💎</span>
+                                      <span className="text-xs text-gray-600 font-medium">
+                                        {leaderboardData.hiraPoints} Hira points
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xs text-gray-500">Your Position</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-4 text-sm text-gray-600 pt-2 border-t border-gray-100">
+                            <span>{challenge.participants.length} participants</span>
+                            <span>•</span>
+                            <span>{challenge.photos.length} photos</span>
+                            <span className="ml-auto text-blue-600 font-medium text-xs flex items-center gap-1">
+                              View Leaderboard
+                              <ArrowRightIcon className="w-3 h-3" />
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>{challenge.participants.length} participants</span>
-                          <span>•</span>
-                          <span>{challenge.photos.length} photos</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

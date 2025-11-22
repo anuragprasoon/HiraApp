@@ -1,8 +1,8 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
-import { PlusIcon, CameraIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { HomeIcon, UserGroupIcon, TrophyIcon, UserIcon, ShareIcon, PhotoIcon } from '@heroicons/react/24/solid';
-import { playBackgroundMusic } from '@/utils/backgroundMusic';
+import { PlusIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, UserGroupIcon, TrophyIcon, UserIcon, ShareIcon, MusicalNoteIcon, SpeakerXMarkIcon } from '@heroicons/react/24/solid';
+import { playBackgroundMusic, pauseBackgroundMusic, resumeBackgroundMusic } from '@/utils/backgroundMusic';
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -58,11 +58,32 @@ function FeatureCard({ icon, title, description, delay }: FeatureCardProps) {
 
 export default function Landing() {
   const router = useRouter();
+  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
 
   useEffect(() => {
-    // Start background music when component mounts
-    playBackgroundMusic();
+    // Check localStorage for music preference
+    const musicPreference = localStorage.getItem('musicEnabled');
+    const shouldPlayMusic = musicPreference === null || musicPreference === 'true';
+    
+    if (shouldPlayMusic) {
+      playBackgroundMusic();
+      setIsMusicPlaying(true);
+    } else {
+      setIsMusicPlaying(false);
+    }
   }, []);
+
+  const toggleMusic = async () => {
+    if (isMusicPlaying) {
+      pauseBackgroundMusic();
+      setIsMusicPlaying(false);
+      localStorage.setItem('musicEnabled', 'false');
+    } else {
+      await resumeBackgroundMusic();
+      setIsMusicPlaying(true);
+      localStorage.setItem('musicEnabled', 'true');
+    }
+  };
 
   const handleGetStarted = () => {
     router.push('/onboarding');
@@ -73,7 +94,20 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black relative">
+      {/* Music Toggle Button */}
+      <button
+        onClick={toggleMusic}
+        className="fixed top-4 right-4 z-50 p-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-full transition-all backdrop-blur-sm"
+        aria-label={isMusicPlaying ? 'Turn off music' : 'Turn on music'}
+      >
+        {isMusicPlaying ? (
+          <MusicalNoteIcon className="w-6 h-6" />
+        ) : (
+          <SpeakerXMarkIcon className="w-6 h-6" />
+        )}
+      </button>
+
       {/* Hero Section */}
       <div className="flex items-center justify-center px-6 py-12 min-h-screen">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -200,8 +234,7 @@ export default function Landing() {
                           <span className="text-[11px] text-[#666666] font-medium">0 Hira</span>
                         </div>
                         <button className="w-full py-2 bg-black text-white text-[11px] font-medium flex items-center justify-center gap-1.5 border border-black">
-                          <CameraIcon className="w-3.5 h-3.5" />
-                          Complete with Photo
+                          Complete
                         </button>
                       </div>
                     </div>
@@ -223,8 +256,7 @@ export default function Landing() {
                           <span className="text-[11px] text-[#666666] font-medium">0 Hira</span>
                         </div>
                         <button className="w-full py-2 bg-black text-white text-[11px] font-medium flex items-center justify-center gap-1.5 border border-black">
-                          <CameraIcon className="w-3.5 h-3.5" />
-                          Complete with Photo
+                          Complete
                         </button>
                       </div>
                     </div>
@@ -294,7 +326,7 @@ export default function Landing() {
               <FeatureCard
                 icon={<ShareIcon className="w-8 h-8" />}
                 title="Social Proof"
-                description="Share your progress with photo verification. Every habit completed is a moment captured, a story told, a journey shared."
+                description="Share your progress and achievements. Every habit completed is a moment captured, a story told, a journey shared."
                 delay={0}
               />
               <FeatureCard
@@ -397,9 +429,11 @@ export default function Landing() {
             {/* Right Column - 3 Feature Cards */}
             <div className="lg:col-span-4 space-y-6">
               <FeatureCard
-                icon={<PhotoIcon className="w-8 h-8" />}
-                title="Photo Verification"
-                description="Capture your progress with timestamped photos. No checkboxes—just real proof of your commitment and consistency."
+                icon={<svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>}
+                title="Track Progress"
+                description="Monitor your consistency and growth. No checkboxes—just real proof of your commitment and dedication to your goals."
                 delay={0.5}
               />
               <FeatureCard

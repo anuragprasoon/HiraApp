@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import HabitCard from '@/components/HabitCard';
 import HabitDetailModal from '@/components/HabitDetailModal';
+import CompletionShareModal from '@/components/CompletionShareModal';
 import EmojiPicker from '@/components/EmojiPicker';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { Habit, HabitPhoto } from '@/types';
@@ -24,6 +25,8 @@ export default function Home() {
   const [newHabitEmoji, setNewHabitEmoji] = useState('⭐');
   const [reminderTime, setReminderTime] = useState('09:00');
   const [totalDays, setTotalDays] = useState(30);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completedHabit, setCompletedHabit] = useState<Habit | null>(null);
   const user = getUser();
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export default function Home() {
     sounds.success();
   };
 
-  const handleCompleteHabit = (habitId: string, photoData: string) => {
+  const handleCompleteHabit = (habitId: string) => {
     const habit = habits.find(h => h.id === habitId);
     if (!habit) return;
 
@@ -65,20 +68,16 @@ export default function Home() {
     
     if (isAlreadyCompleted) return;
 
-    // Add photo
-    const photo: HabitPhoto = {
-      id: `photo_${Date.now()}`,
-      habitId,
-      photoData,
-      timestamp: new Date().toISOString(),
-      date: today,
-    };
-    addPhoto(photo);
-
     // Update habit
     const updatedCompletedDates = [...habit.completedDates, today];
     const hiraEarned = 1; // 1 hira per completion
     const newTotalHira = habit.totalHira + hiraEarned;
+
+    const updatedHabit = {
+      ...habit,
+      completedDates: updatedCompletedDates,
+      totalHira: newTotalHira,
+    };
 
     updateHabit(habitId, {
       completedDates: updatedCompletedDates,
@@ -95,6 +94,10 @@ export default function Home() {
     }
 
     setHabits(getHabits());
+    
+    // Show completion modal
+    setCompletedHabit(updatedHabit);
+    setShowCompletionModal(true);
   };
 
   const getGreeting = () => {
@@ -337,6 +340,17 @@ export default function Home() {
             habit={selectedHabit}
             photos={getPhotos()}
             onClose={() => setSelectedHabit(null)}
+          />
+        )}
+
+        {/* Completion Share Modal */}
+        {showCompletionModal && completedHabit && (
+          <CompletionShareModal
+            habit={completedHabit}
+            onClose={() => {
+              setShowCompletionModal(false);
+              setCompletedHabit(null);
+            }}
           />
         )}
       </div>

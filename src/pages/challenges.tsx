@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { PlusIcon, UserGroupIcon, CameraIcon, FireIcon, ShareIcon } from '@heroicons/react/24/solid';
+import { PlusIcon, UserGroupIcon, CameraIcon, FireIcon, ShareIcon, XMarkIcon, TrophyIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
 import { Challenge, ChallengePhoto } from '@/types';
 import { getChallenges, addChallenge, updateChallenge, getHabits, addHabit, getUser, initializeChallenges, formatDate } from '@/utils/storage';
 import EmojiPicker from '@/components/EmojiPicker';
 import { sounds } from '@/utils/sounds';
+import { useRouter } from 'next/router';
 
 export default function Challenges() {
+  const router = useRouter();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newChallengeName, setNewChallengeName] = useState('');
@@ -16,6 +18,8 @@ export default function Challenges() {
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [showShareMenu, setShowShareMenu] = useState<string | null>(null);
   const [showEasyChallenges, setShowEasyChallenges] = useState(false);
+  const [showJoinSuccessModal, setShowJoinSuccessModal] = useState(false);
+  const [joinedChallenge, setJoinedChallenge] = useState<Challenge | null>(null);
   const habits = getHabits();
   const user = getUser();
 
@@ -92,6 +96,9 @@ export default function Challenges() {
 
     setChallenges(getChallenges());
     sounds.success();
+
+    // Navigate to leaderboard page
+    router.push(`/challenge/${challengeId}`);
   };
 
   const isParticipating = (challenge: Challenge) => {
@@ -255,18 +262,26 @@ export default function Challenges() {
                         )}
 
                         {participating ? (
-                          <div className="flex gap-3">
-                            <div className={`flex-1 bg-gradient-to-r ${colorClass} 2xl p-4 text-center text-white shadow-lg`}>
+                          <div className="space-y-3">
+                            <div className={`bg-gradient-to-r ${colorClass} 2xl p-4 text-center text-white shadow-lg`}>
                               <p className="font-bold text-lg">🎉 You're participating!</p>
                               <p className="text-sm opacity-90 mt-1">Keep up the great work!</p>
                             </div>
+                            <button
+                              onClick={() => router.push(`/challenge/${challenge.id}`)}
+                              className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white xl hover:from-blue-600 hover:to-purple-600 transition-all font-semibold shadow-lg flex items-center justify-center gap-2"
+                            >
+                              <TrophyIcon className="w-5 h-5" />
+                              View Leaderboard
+                            </button>
                             <div className="relative">
                               <button
                                 onClick={() => toggleShareMenu(challenge.id)}
-                                className="h-full px-4 bg-gray-100 text-gray-700 xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2 font-medium"
+                                className="w-full py-3 bg-white border-2 border-gray-200 text-gray-700 xl hover:bg-gray-50 transition-all font-semibold flex items-center justify-center gap-2"
                                 title="Share challenge"
                               >
                                 <ShareIcon className="w-5 h-5" />
+                                Share Challenge
                               </button>
                               {showShareMenu === challenge.id && (
                                 <div className="absolute right-0 bottom-full mb-2 bg-white xl shadow-2xl p-2 z-10 min-w-[160px] border border-gray-200">
@@ -422,8 +437,12 @@ export default function Challenges() {
                                 )}
                               </div>
                               {participating ? (
-                                <button className="px-5 py-2.5 bg-green-500 text-white full font-bold text-sm">
-                                  Joined ✓
+                                <button 
+                                  onClick={() => router.push(`/challenge/${challenge.id}`)}
+                                  className="px-5 py-2.5 bg-green-500 text-white full font-bold text-sm hover:bg-green-600 transition-colors flex items-center gap-1"
+                                >
+                                  <TrophyIcon className="w-4 h-4" />
+                                  View Leaderboard
                                 </button>
                               ) : (
                                 <button
@@ -542,18 +561,26 @@ export default function Challenges() {
                         </div>
 
                         {participating ? (
-                          <div className="flex gap-3">
-                            <div className={`flex-1 bg-gradient-to-r ${colorClass} 2xl p-4 text-center text-white shadow-lg`}>
+                          <div className="space-y-3">
+                            <div className={`bg-gradient-to-r ${colorClass} 2xl p-4 text-center text-white shadow-lg`}>
                               <p className="font-bold text-lg">🎉 You're participating!</p>
                               <p className="text-sm opacity-90 mt-1">Keep up the great work!</p>
                             </div>
+                            <button
+                              onClick={() => router.push(`/challenge/${challenge.id}`)}
+                              className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white xl hover:from-blue-600 hover:to-purple-600 transition-all font-semibold shadow-lg flex items-center justify-center gap-2"
+                            >
+                              <TrophyIcon className="w-5 h-5" />
+                              View Leaderboard
+                            </button>
                             <div className="relative">
                               <button
                                 onClick={() => toggleShareMenu(challenge.id)}
-                                className="h-full px-4 bg-gray-100 text-gray-700 xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2 font-medium"
+                                className="w-full py-3 bg-white border-2 border-gray-200 text-gray-700 xl hover:bg-gray-50 transition-all font-semibold flex items-center justify-center gap-2"
                                 title="Share challenge"
                               >
                                 <ShareIcon className="w-5 h-5" />
+                                Share Challenge
                               </button>
                               {showShareMenu === challenge.id && (
                                 <div className="absolute right-0 bottom-full mb-2 bg-white xl shadow-2xl p-2 z-10 min-w-[160px] border border-gray-200">
@@ -751,6 +778,13 @@ export default function Challenges() {
                           <p className="text-sm opacity-90 mt-1">Keep up the great work!</p>
                         </div>
                         <button
+                          onClick={() => router.push(`/challenge/${challenge.id}`)}
+                          className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white xl hover:from-blue-600 hover:to-purple-600 transition-all font-semibold shadow-lg flex items-center justify-center gap-2"
+                        >
+                          <TrophyIcon className="w-5 h-5" />
+                          View Leaderboard
+                        </button>
+                        <button
                           onClick={() => toggleShareMenu(challenge.id)}
                           className="w-full py-3 bg-white border-2 border-gray-200 text-gray-700 xl hover:bg-gray-50 transition-all font-semibold flex items-center justify-center gap-2"
                         >
@@ -940,6 +974,87 @@ export default function Challenges() {
                       className="flex-1 py-3.5 bg-blue-500 text-white xl hover:bg-blue-600 transition-all font-medium shadow-lg"
                     >
                       Create
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Challenge Join Success Modal */}
+          {showJoinSuccessModal && joinedChallenge && (
+            <div 
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => {
+                setShowJoinSuccessModal(false);
+                setJoinedChallenge(null);
+              }}
+            >
+              <div 
+                className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl relative"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => {
+                    setShowJoinSuccessModal(false);
+                    setJoinedChallenge(null);
+                  }}
+                  className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Close"
+                >
+                  <XMarkIcon className="w-5 h-5 text-gray-600" />
+                </button>
+
+                {/* Content */}
+                <div className="text-center space-y-6">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 mb-4">
+                    <span className="text-5xl">{joinedChallenge.emoji || '🎯'}</span>
+                  </div>
+                  
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">Challenge Joined!</h2>
+                  
+                  <p className="text-lg text-gray-600 leading-relaxed">
+                    Great! The habit <span className="font-semibold text-gray-900">"{joinedChallenge.habitName}"</span> associated with this challenge has been added to your timeline in <span className="font-semibold text-blue-600">story mode</span>.
+                  </p>
+
+                  <div className="bg-blue-50 rounded-xl p-4 space-y-2">
+                    <p className="text-sm text-gray-700 font-medium">What's next?</p>
+                    <div className="flex flex-col gap-3 text-left">
+                      <div className="flex items-center gap-3">
+                        <ShareIcon className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                        <p className="text-sm text-gray-600">Share with friends to invite them</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <TrophyIcon className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+                        <p className="text-sm text-gray-600">Complete habits to win rewards</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        handleShareChallenge(joinedChallenge, 'copy');
+                        setShowJoinSuccessModal(false);
+                        setJoinedChallenge(null);
+                      }}
+                      className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <ShareIcon className="w-5 h-5" />
+                      Share with Friends
+                    </button>
+                    <button
+                      onClick={() => {
+                        router.push('/profile');
+                        setShowJoinSuccessModal(false);
+                        setJoinedChallenge(null);
+                      }}
+                      className="w-full py-4 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <TrophyIcon className="w-5 h-5" />
+                      View Timeline
+                      <ArrowRightIcon className="w-5 h-5" />
                     </button>
                   </div>
                 </div>

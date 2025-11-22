@@ -77,3 +77,7 @@ export const resumeBackgroundMusic = async (): Promise<void> => {
   }
 };
 
+export const getMusicPlayingState = (): boolean => {
+  return isPlaying;
+};
+

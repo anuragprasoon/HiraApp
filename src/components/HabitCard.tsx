@@ -1,12 +1,10 @@
-import { useState } from 'react';
-import { CameraIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import { Habit } from '@/types';
-import CameraCapture from './CameraCapture';
 import { sounds } from '@/utils/sounds';
 
 interface HabitCardProps {
   habit: Habit;
-  onComplete: (habitId: string, photoData: string) => void;
+  onComplete: (habitId: string) => void;
   onViewDetails?: (habit: Habit) => void;
 }
 
@@ -38,14 +36,14 @@ const getHabitColor = (index: number) => {
 };
 
 export default function HabitCard({ habit, onComplete, onViewDetails }: HabitCardProps) {
-  const [showCamera, setShowCamera] = useState(false);
   const today = new Date().toISOString().split('T')[0];
   const isCompletedToday = habit.completedDates.includes(today);
   const habitIndex = parseInt(habit.id.split('_')[1] || '0') % 6;
   const displayEmoji = habit.emoji || getHabitIcon(habit.name);
 
-  const handleCapture = (photoData: string) => {
-    onComplete(habit.id, photoData);
+  const handleComplete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onComplete(habit.id);
     sounds.complete();
   };
 
@@ -74,7 +72,9 @@ export default function HabitCard({ habit, onComplete, onViewDetails }: HabitCar
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-medium text-black">{habit.name}</h3>
+              <h3 className={`text-base font-medium ${isCompletedToday ? 'line-through text-gray-400' : 'text-black'}`}>
+                {habit.name}
+              </h3>
               {isCompletedToday ? (
                 <CheckCircleIcon className="w-6 h-6 text-[#0066ff] flex-shrink-0" />
               ) : (
@@ -91,27 +91,15 @@ export default function HabitCard({ habit, onComplete, onViewDetails }: HabitCar
             {/* Action Button */}
             {!isCompletedToday && (
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCamera(true);
-                }}
+                onClick={handleComplete}
                 className="w-full py-2.5 bg-black text-white  font-medium hover:bg-[#1a1a1a] transition-all flex items-center justify-center gap-2 text-sm border border-black"
               >
-                <CameraIcon className="w-4 h-4" />
-                Complete with Photo
+                Complete
               </button>
             )}
           </div>
         </div>
       </div>
-
-      {showCamera && (
-        <CameraCapture
-          habitName={habit.name}
-          onCapture={handleCapture}
-          onClose={() => setShowCamera(false)}
-        />
-      )}
     </>
   );
 }
