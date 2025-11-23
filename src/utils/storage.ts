@@ -1,4 +1,4 @@
-import { Habit, HabitPhoto, Reward, Challenge, User, CalendarDay } from '@/types';
+import { Habit, HabitPhoto, Reward, Challenge, User, CalendarDay, Friend } from '@/types';
 
 const STORAGE_KEYS = {
   HABITS: 'hira_habits',
@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   CHALLENGES: 'hira_challenges',
   USER: 'hira_user',
   UNLOCKED_REWARDS: 'hira_unlocked_rewards',
+  FRIENDS: 'hira_friends',
 };
 
 // User
@@ -138,6 +139,114 @@ export const getDefaultRewards = (): Reward[] => {
       discountCode: 'HIRA20',
       unlocked: false,
     },
+    {
+      id: 'gym_membership',
+      title: 'Gym Membership 15% Off',
+      description: 'Discount on gym membership subscriptions',
+      hiraCost: 80,
+      category: 'fitness',
+      discountCode: 'HIRAGYM15',
+      unlocked: false,
+    },
+    {
+      id: 'book_store',
+      title: 'Book Store 20% Off',
+      description: '20% off on books and reading materials',
+      hiraCost: 90,
+      category: 'reading',
+      discountCode: 'HIRABOOK20',
+      unlocked: false,
+    },
+    {
+      id: 'apple_music',
+      title: 'Apple Music 1 Month Free',
+      description: 'Free 1 month Apple Music subscription',
+      hiraCost: 95,
+      category: 'music',
+      discountCode: 'HIRAAPPLE',
+      unlocked: false,
+    },
+    {
+      id: 'coursera',
+      title: 'Coursera Course Discount',
+      description: '25% off on Coursera courses',
+      hiraCost: 130,
+      category: 'learning',
+      discountCode: 'HIRACOURSE25',
+      unlocked: false,
+    },
+    {
+      id: 'yoga_class',
+      title: 'Yoga Class Pass',
+      description: 'Free yoga class pass',
+      hiraCost: 60,
+      category: 'fitness',
+      discountCode: 'HIRAYOGA',
+      unlocked: false,
+    },
+    {
+      id: 'audible',
+      title: 'Audible 1 Month Free',
+      description: 'Free 1 month Audible subscription',
+      hiraCost: 85,
+      category: 'reading',
+      discountCode: 'HIRAAUDIBLE',
+      unlocked: false,
+    },
+    {
+      id: 'skillshare',
+      title: 'Skillshare Premium 2 Months',
+      description: 'Free 2 months Skillshare Premium',
+      hiraCost: 110,
+      category: 'learning',
+      discountCode: 'HIRASKILL',
+      unlocked: false,
+    },
+    {
+      id: 'wellness_kit',
+      title: 'Wellness Kit Discount',
+      description: '15% off on wellness and health products',
+      hiraCost: 70,
+      category: 'wellness',
+      discountCode: 'HIRAWELL15',
+      unlocked: false,
+    },
+    {
+      id: 'cash_10',
+      title: 'Cash Redeem',
+      description: 'Redeem cash',
+      hiraCost: 7, // 7 * 1.5 = ₹10.5
+      category: 'cash',
+      discountCode: 'CASH10',
+      unlocked: false,
+    },
+    {
+      id: 'cash_25',
+      title: 'Cash Redeem',
+      description: 'Redeem cash',
+      hiraCost: 17, // 17 * 1.5 = ₹25.5
+      category: 'cash',
+      discountCode: 'CASH25',
+      unlocked: false,
+    },
+    {
+      id: 'cash_50',
+      title: 'Cash Redeem',
+      description: 'Redeem cash',
+      hiraCost: 34, // 34 * 1.5 = ₹51
+      category: 'cash',
+      discountCode: 'CASH50',
+      unlocked: false,
+    },
+    {
+      id: 'cash_100',
+      title: 'Cash Redeem',
+      description: 'Redeem cash',
+      hiraCost: 67, // 67 * 1.5 = ₹100.5
+      category: 'cash',
+      discountCode: 'CASH100',
+      unlocked: false,
+    },
   ];
 };
 
@@ -170,6 +279,7 @@ export const getPredefinedChallenges = (): Challenge[] => {
       status: 'active',
       isPredefined: true,
       emoji: '💪',
+      category: 'Fitness',
     },
     {
       id: 'predefined_21day_reading',
@@ -184,6 +294,7 @@ export const getPredefinedChallenges = (): Challenge[] => {
       status: 'active',
       isPredefined: true,
       emoji: '📚',
+      category: 'Learning',
     },
     {
       id: 'predefined_7day_meditation',
@@ -198,6 +309,7 @@ export const getPredefinedChallenges = (): Challenge[] => {
       status: 'active',
       isPredefined: true,
       emoji: '🧘',
+      category: 'Mindfulness',
     },
     {
       id: 'predefined_30day_water',
@@ -212,6 +324,7 @@ export const getPredefinedChallenges = (): Challenge[] => {
       status: 'active',
       isPredefined: true,
       emoji: '💧',
+      category: 'Health',
     },
     {
       id: 'predefined_21day_journal',
@@ -226,6 +339,7 @@ export const getPredefinedChallenges = (): Challenge[] => {
       status: 'active',
       isPredefined: true,
       emoji: '✍️',
+      category: 'Mindfulness',
     },
     {
       id: 'predefined_30day_walk',
@@ -240,6 +354,7 @@ export const getPredefinedChallenges = (): Challenge[] => {
       status: 'active',
       isPredefined: true,
       emoji: '🚶',
+      category: 'Health',
     },
     {
       id: 'predefined_7day_sleep',
@@ -254,6 +369,7 @@ export const getPredefinedChallenges = (): Challenge[] => {
       status: 'active',
       isPredefined: true,
       emoji: '😴',
+      category: 'Health',
     },
     {
       id: 'predefined_30day_code',
@@ -268,6 +384,7 @@ export const getPredefinedChallenges = (): Challenge[] => {
       status: 'active',
       isPredefined: true,
       emoji: '💻',
+      category: 'Work',
     },
   ];
 };
@@ -370,5 +487,51 @@ export const isToday = (dateStr: string): boolean => {
 export const formatDate = (dateStr: string): string => {
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+// Friends
+export const getFriends = (): Friend[] => {
+  if (typeof window === 'undefined') return [];
+  const data = localStorage.getItem(STORAGE_KEYS.FRIENDS);
+  return data ? JSON.parse(data) : [];
+};
+
+export const saveFriends = (friends: Friend[]): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.FRIENDS, JSON.stringify(friends));
+};
+
+export const addFriend = (friend: Friend): void => {
+  const friends = getFriends();
+  if (!friends.find(f => f.id === friend.id)) {
+    friends.push(friend);
+    saveFriends(friends);
+  }
+};
+
+export const updateFriend = (friendId: string, updates: Partial<Friend>): void => {
+  const friends = getFriends();
+  const index = friends.findIndex(f => f.id === friendId);
+  if (index !== -1) {
+    friends[index] = { ...friends[index], ...updates };
+    saveFriends(friends);
+  }
+};
+
+// Helper to get start of week (Monday)
+export const getStartOfWeek = (): Date => {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+  return new Date(now.setDate(diff));
+};
+
+// Helper to check if date is in current week
+export const isInCurrentWeek = (dateStr: string): boolean => {
+  const date = new Date(dateStr);
+  const startOfWeek = getStartOfWeek();
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(endOfWeek.getDate() + 6);
+  return date >= startOfWeek && date <= endOfWeek;
 };
 

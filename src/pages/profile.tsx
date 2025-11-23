@@ -312,6 +312,60 @@ export default function Profile() {
           </div>
 
           <div className="px-4 space-y-4 pb-6">
+            {/* Profile Information Card */}
+            {(user.age || user.gender || user.collegeOrProfession || (user.hobbies && user.hobbies.length > 0)) && (
+              <div className="bg-white 2xl p-5 shadow-sm border border-gray-200">
+                <h3 className="text-sm text-[#666666] uppercase tracking-wider font-normal mb-4">Profile Information</h3>
+                <div className="space-y-3">
+                  {user.age && (
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">🎂</span>
+                      <div>
+                        <p className="text-xs text-gray-500">Age</p>
+                        <p className="text-sm font-medium text-gray-900">{user.age} years old</p>
+                      </div>
+                    </div>
+                  )}
+                  {user.gender && (
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">👤</span>
+                      <div>
+                        <p className="text-xs text-gray-500">Gender</p>
+                        <p className="text-sm font-medium text-gray-900">{user.gender}</p>
+                      </div>
+                    </div>
+                  )}
+                  {user.collegeOrProfession && (
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">🎓</span>
+                      <div>
+                        <p className="text-xs text-gray-500">College / Profession</p>
+                        <p className="text-sm font-medium text-gray-900">{user.collegeOrProfession}</p>
+                      </div>
+                    </div>
+                  )}
+                  {user.hobbies && user.hobbies.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg">🎨</span>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 mb-2">Hobbies</p>
+                        <div className="flex flex-wrap gap-2">
+                          {user.hobbies.map((hobby, index) => (
+                            <span
+                              key={index}
+                              className="inline-block px-3 py-1 bg-blue-50 border border-blue-200 xl text-xs font-medium text-blue-700"
+                            >
+                              {hobby}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Progress Statistics Card */}
             <div className="bg-white 2xl p-5 shadow-sm border border-gray-200">
               <div className="grid grid-cols-3 gap-4">

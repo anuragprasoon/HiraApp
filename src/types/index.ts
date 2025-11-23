@@ -11,6 +11,8 @@ export interface Habit {
   totalDays?: number; // Total days for the habit
   startDate?: string; // ISO date string
   challengeId?: string; // ID of the challenge this habit is from
+  priority?: 'Low' | 'Medium' | 'High'; // Priority level
+  timesPerDay?: number; // Number of times to complete per day
 }
 
 export interface HabitPhoto {
@@ -45,6 +47,7 @@ export interface Challenge {
   status: 'active' | 'completed' | 'upcoming';
   isPredefined?: boolean; // True for system/predefined challenges
   emoji?: string; // Emoji for the challenge
+  category?: string; // Category of the challenge
 }
 
 export interface ChallengePhoto {
@@ -66,11 +69,29 @@ export interface User {
   joinedAt: string;
   completedChallenges: string[];
   hasCompletedOnboarding?: boolean;
+  age?: number;
+  gender?: string;
+  collegeOrProfession?: string;
+  hobbies?: string[];
 }
 
 export interface CalendarDay {
   date: string;
   count: number;
   level: 0 | 1 | 2 | 3 | 4; // 0 = no activity, 4 = max activity
+}
+
+export interface Friend {
+  id: string;
+  name: string;
+  phoneNumber?: string;
+  email?: string;
+  profilePhoto?: string;
+  totalHira: number;
+  weeklyHira: number; // Hira earned this week
+  tasksDone: number; // Number of tasks completed this week
+  challengesDone: number; // Number of challenges completed
+  joinedAt: string;
+  isSyncedFromContacts: boolean;
 }
 

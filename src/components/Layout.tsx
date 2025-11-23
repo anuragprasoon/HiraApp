@@ -6,12 +6,14 @@ import {
   UserIcon,
   TrophyIcon,
   UserGroupIcon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
   UserIcon as UserIconSolid,
   TrophyIcon as TrophyIconSolid,
   UserGroupIcon as UserGroupIconSolid,
+  UserCircleIcon as UserCircleIconSolid,
 } from '@heroicons/react/24/solid';
 
 interface LayoutProps {
@@ -24,6 +26,7 @@ export default function Layout({ children }: LayoutProps) {
   const navItems = [
     { path: '/', icon: HomeIcon, iconSolid: HomeIconSolid, label: 'Home' },
     { path: '/challenges', icon: UserGroupIcon, iconSolid: UserGroupIconSolid, label: 'Challenges' },
+    { path: '/friends', icon: UserCircleIcon, iconSolid: UserCircleIconSolid, label: 'Friends' },
     { path: '/rewards', icon: TrophyIcon, iconSolid: TrophyIconSolid, label: 'Rewards' },
     { path: '/profile', icon: UserIcon, iconSolid: UserIconSolid, label: 'Profile' },
   ];

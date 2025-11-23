@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { PlusIcon, UserGroupIcon, CameraIcon, FireIcon, ShareIcon, XMarkIcon, TrophyIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
-import { Challenge, ChallengePhoto } from '@/types';
+import { PlusIcon, UserGroupIcon, FireIcon, ShareIcon, XMarkIcon, TrophyIcon, ArrowRightIcon, FunnelIcon } from '@heroicons/react/24/solid';
+import { Challenge, ChallengePhoto, User } from '@/types';
 import { getChallenges, addChallenge, updateChallenge, getHabits, addHabit, getUser, initializeChallenges, formatDate } from '@/utils/storage';
 import EmojiPicker from '@/components/EmojiPicker';
 import { sounds } from '@/utils/sounds';
 import { useRouter } from 'next/router';
+
+const CHALLENGE_CATEGORIES = ['All', 'Fitness', 'Health', 'Learning', 'Work', 'Social', 'Creative', 'Daily', 'Mindfulness', 'Finance', 'Productivity'];
 
 export default function Challenges() {
   const router = useRouter();
@@ -20,6 +22,7 @@ export default function Challenges() {
   const [showEasyChallenges, setShowEasyChallenges] = useState(false);
   const [showJoinSuccessModal, setShowJoinSuccessModal] = useState(false);
   const [joinedChallenge, setJoinedChallenge] = useState<Challenge | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const habits = getHabits();
   const user = getUser();
 
@@ -50,6 +53,7 @@ export default function Challenges() {
       participants: [user.id],
       photos: [],
       status: 'active',
+      category: habit.category || 'Daily',
     };
 
     addChallenge(newChallenge);
@@ -109,6 +113,83 @@ export default function Challenges() {
     return challenge.participants.length;
   };
 
+  // Calculate leaderboard position for a challenge
+  const getChallengeLeaderboardPosition = (challenge: Challenge): { rank: number; hiraPoints: number; totalParticipants: number } => {
+    if (!user) return { rank: 0, hiraPoints: 0, totalParticipants: 0 };
+
+    const allUsers = [getUser()].filter(Boolean) as User[];
+    
+    // Get all participants' data
+    const entries: Array<{ userId: string; hiraPoints: number }> = [];
+    
+    challenge.participants.forEach((participantId) => {
+      const participantUser = allUsers.find(u => u.id === participantId);
+      if (!participantUser) return;
+
+      // Find the habit associated with this challenge for this participant
+      const challengeHabit = habits.find(
+        h => h.challengeId === challenge.id
+      );
+
+      const hiraPoints = challengeHabit?.totalHira || 0;
+      entries.push({ userId: participantId, hiraPoints });
+    });
+
+    // Sort by Hira points (descending)
+    entries.sort((a, b) => b.hiraPoints - a.hiraPoints);
+
+    // Find current user's rank
+    let userRank = 0;
+    let userHiraPoints = 0;
+    
+    for (let i = 0; i < entries.length; i++) {
+      if (entries[i].userId === user.id) {
+        userHiraPoints = entries[i].hiraPoints;
+        // Handle ties - if previous entry has same points, use same rank
+        if (i > 0 && entries[i - 1].hiraPoints === entries[i].hiraPoints) {
+          // Find the first entry with this score
+          let rank = i;
+          for (let j = i - 1; j >= 0; j--) {
+            if (entries[j].hiraPoints === entries[i].hiraPoints) {
+              rank = j;
+            } else {
+              break;
+            }
+          }
+          userRank = rank + 1;
+        } else {
+          userRank = i + 1;
+        }
+        break;
+      }
+    }
+
+    return {
+      rank: userRank,
+      hiraPoints: userHiraPoints,
+      totalParticipants: entries.length
+    };
+  };
+
+  const getMedalEmoji = (rank: number) => {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return null;
+  };
+
+  // Filter challenges
+  const getFilteredChallenges = (challengeList: Challenge[]) => {
+    let filtered = challengeList;
+
+    // Filter by category
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(c => c.category === selectedCategory);
+    }
+
+    return filtered;
+  };
+
   const toggleShareMenu = (challengeId: string) => {
     setShowShareMenu(showShareMenu === challengeId ? null : challengeId);
   };
@@ -137,7 +218,7 @@ export default function Challenges() {
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
           <div className="max-w-2xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl text-black" style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic' }}>Challenges</h1>
               <button
                 onClick={() => setShowCreateModal(true)}
@@ -146,6 +227,26 @@ export default function Challenges() {
                 <PlusIcon className="w-4 h-4" />
                 Create
               </button>
+            </div>
+            
+            {/* Filter Controls - Chips */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-2">Category</label>
+              <div className="flex flex-wrap gap-2">
+                {CHALLENGE_CATEGORIES.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      selectedCategory === category
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -181,15 +282,14 @@ export default function Challenges() {
           )}
 
           {/* User Created Challenges Section */}
-          {user && challenges.filter(c => !c.isPredefined && c.createdBy === user.id).length > 0 && (
+          {user && getFilteredChallenges(challenges.filter(c => !c.isPredefined && c.createdBy === user.id)).length > 0 && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-lg">✨</span>
                 <h2 className="text-lg font-bold text-gray-900">My Challenges</h2>
               </div>
               <div className="space-y-4">
-                {challenges
-                  .filter(c => !c.isPredefined && c.createdBy === user.id)
+                {getFilteredChallenges(challenges.filter(c => !c.isPredefined && c.createdBy === user.id))
                   .map((challenge, index) => {
                     const colors = [
                       'from-pink-500 to-rose-500',
@@ -200,6 +300,8 @@ export default function Challenges() {
                     ];
                     const colorClass = colors[index % colors.length];
                     const participating = isParticipating(challenge);
+                    const leaderboardData = participating ? getChallengeLeaderboardPosition(challenge) : null;
+                    const medal = leaderboardData && leaderboardData.rank > 0 ? getMedalEmoji(leaderboardData.rank) : null;
                     
                     return (
                       <div
@@ -226,10 +328,6 @@ export default function Challenges() {
                               <span className="font-semibold">{getParticipantCount(challenge)}</span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 full">
-                              <span className="text-lg">📸</span>
-                              <span className="font-semibold">{challenge.photos.length}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 full">
                               <span className="text-lg">📅</span>
                               <span className="font-semibold">{formatDate(challenge.endDate)}</span>
                             </div>
@@ -243,28 +341,24 @@ export default function Challenges() {
                           </div>
                         </div>
 
-                        {/* Challenge Photos Preview - Social Feed Style */}
-                        {challenge.photos.length > 0 && (
-                          <div className="mb-4">
-                            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Recent Activity</p>
-                            <div className="grid grid-cols-4 gap-2">
-                              {challenge.photos.slice(0, 8).map((photo) => (
-                                <div key={photo.id} className="aspect-square xl overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-all cursor-pointer group">
-                                  <img
-                                    src={photo.photoData}
-                                    alt={challenge.name}
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
 
                         {participating ? (
                           <div className="space-y-3">
                             <div className={`bg-gradient-to-r ${colorClass} 2xl p-4 text-center text-white shadow-lg`}>
                               <p className="font-bold text-lg">🎉 You're participating!</p>
+                              {leaderboardData && leaderboardData.rank > 0 && (
+                                <div className="mt-2 flex items-center justify-center gap-2">
+                                  {medal && <span className="text-2xl">{medal}</span>}
+                                  <span className="text-sm font-semibold">
+                                    Rank #{leaderboardData.rank} of {leaderboardData.totalParticipants}
+                                  </span>
+                                  {leaderboardData.hiraPoints > 0 && (
+                                    <span className="text-xs opacity-90">
+                                      • {leaderboardData.hiraPoints} Hira
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                               <p className="text-sm opacity-90 mt-1">Keep up the great work!</p>
                             </div>
                             <button
@@ -384,18 +478,18 @@ export default function Challenges() {
           )}
 
           {/* Most Popular Section */}
-          {challenges.filter(c => c.isPredefined).length > 0 && (
+          {getFilteredChallenges(challenges.filter(c => c.isPredefined).filter(c => showEasyChallenges || isParticipating(c))).length > 0 && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-lg">🔔</span>
                 <h2 className="text-lg font-bold text-gray-900">Most Popular</h2>
               </div>
               <div className="space-y-3">
-                {challenges
-                  .filter(c => c.isPredefined)
-                  .filter(c => showEasyChallenges || isParticipating(c)) // Show all if button clicked, otherwise only participating
+                {getFilteredChallenges(challenges.filter(c => c.isPredefined).filter(c => showEasyChallenges || isParticipating(c)))
                   .map((challenge) => {
                     const participating = isParticipating(challenge);
+                    const leaderboardData = participating ? getChallengeLeaderboardPosition(challenge) : null;
+                    const medal = leaderboardData && leaderboardData.rank > 0 ? getMedalEmoji(leaderboardData.rank) : null;
                     
                     return (
                       <div
@@ -426,6 +520,20 @@ export default function Challenges() {
                               </button>
                             </div>
                             <p className="text-sm text-gray-600 mb-3 line-clamp-2">{challenge.description}</p>
+                            
+                            {participating && leaderboardData && leaderboardData.rank > 0 && (
+                              <div className="mb-2 flex items-center gap-2">
+                                {medal && <span className="text-lg">{medal}</span>}
+                                <span className="text-xs font-semibold text-gray-700">
+                                  Your Rank: #{leaderboardData.rank} of {leaderboardData.totalParticipants}
+                                </span>
+                                {leaderboardData.hiraPoints > 0 && (
+                                  <span className="text-xs text-gray-500">
+                                    • {leaderboardData.hiraPoints} Hira
+                                  </span>
+                                )}
+                              </div>
+                            )}
                             
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
@@ -543,10 +651,6 @@ export default function Challenges() {
                               <span className="font-semibold">{getParticipantCount(challenge)}</span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 full">
-                              <span className="text-lg">📸</span>
-                              <span className="font-semibold">{challenge.photos.length}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 full">
                               <span className="text-lg">📅</span>
                               <span className="font-semibold">{formatDate(challenge.endDate)}</span>
                             </div>
@@ -564,6 +668,19 @@ export default function Challenges() {
                           <div className="space-y-3">
                             <div className={`bg-gradient-to-r ${colorClass} 2xl p-4 text-center text-white shadow-lg`}>
                               <p className="font-bold text-lg">🎉 You're participating!</p>
+                              {leaderboardData && leaderboardData.rank > 0 && (
+                                <div className="mt-2 flex items-center justify-center gap-2">
+                                  {medal && <span className="text-2xl">{medal}</span>}
+                                  <span className="text-sm font-semibold">
+                                    Rank #{leaderboardData.rank} of {leaderboardData.totalParticipants}
+                                  </span>
+                                  {leaderboardData.hiraPoints > 0 && (
+                                    <span className="text-xs opacity-90">
+                                      • {leaderboardData.hiraPoints} Hira
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                               <p className="text-sm opacity-90 mt-1">Keep up the great work!</p>
                             </div>
                             <button
@@ -735,10 +852,6 @@ export default function Challenges() {
                           <span className="font-semibold">{getParticipantCount(challenge)}</span>
                         </div>
                         <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 full">
-                          <span className="text-lg">📸</span>
-                          <span className="font-semibold">{challenge.photos.length}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 full">
                           <span className="text-lg">📅</span>
                           <span className="font-semibold">{formatDate(challenge.endDate)}</span>
                         </div>
@@ -753,23 +866,6 @@ export default function Challenges() {
                       </div>
                     </div>
 
-                    {/* Challenge Photos Preview - Social Feed Style */}
-                    {challenge.photos.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Recent Activity</p>
-                        <div className="grid grid-cols-4 gap-2">
-                          {challenge.photos.slice(0, 8).map((photo) => (
-                            <div key={photo.id} className="aspect-square xl overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-all cursor-pointer group">
-                              <img
-                                src={photo.photoData}
-                                alt={challenge.name}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                     {isParticipating(challenge) ? (
                       <div className="space-y-3">
