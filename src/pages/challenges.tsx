@@ -625,6 +625,8 @@ export default function Challenges() {
                     ];
                     const colorClass = colors[index % colors.length];
                     const participating = isParticipating(challenge);
+                    const leaderboardData = participating ? getChallengeLeaderboardPosition(challenge) : null;
+                    const medal = leaderboardData && leaderboardData.rank > 0 ? getMedalEmoji(leaderboardData.rank) : null;
                     
                     return (
                       <div
